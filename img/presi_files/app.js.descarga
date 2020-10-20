@@ -1,0 +1,292 @@
+var $_getVariables={isset:false};
+var $_getGlobalVariables={};
+var $_GETAllVariables = function (){
+	var scripts = document.getElementsByTagName("script");
+	for(var i=0;i<scripts.length;i++){
+	    var script = ( scripts[i].src+"" ).split("/");
+	    script = script[script.length-1].split("?",2);
+	    if (script.length>1)
+	    {	
+	        var parameters = script[1].split("&") 
+	        for (var j=0;j<parameters.length;j++){
+	            var vars = parameters[j].split("=");
+	            if (!$_getVariables[script[0]]) $_getVariables[script[0]] = {};
+	            $_getVariables[script[0]][vars[0]]=vars[1];
+	            $_getGlobalVariables[vars[0]]=vars[1];
+	        }
+	    }
+	}
+	$_getVariables.isset=true;
+};
+$_GET = function(paramToGet,jsFile) {
+	if (!$_getVariables.isset) 
+		$_GETAllVariables();
+	if (jsFile)
+		return $_getVariables[jsFile][paramToGet];
+	else
+		return $_getGlobalVariables[paramToGet];
+};
+
+
+
+function actualizarDatosPartido(param){
+	
+	$.get( "/partido/index.php?detalle=1&param_partido=" + param, function( data ) {
+		 try {
+  		obj = JSON.parse(data);
+  		$(".cebecera-partido").html(atob(obj.resultado[0].html_cabecera));
+  		$("#alineacion").html(atob(obj.resultado[0].html_alineacion));
+  		$("#narracion").html(atob(obj.resultado[0].html_narracion));
+  		$("#actas").html(atob(obj.resultado[0].html_acta));
+  		$("#estadisticas").html(atob(obj.resultado[0].html_estadisticas));
+  		
+  		if(obj.resultado[0].estado==1){
+  			location.reload();
+  		}
+  		
+  	} catch(e) {
+  		console.log(e.message);
+    	
+    }
+    
+	});
+}
+
+function cargarJornadaActual(Tjornada,Nano){
+	
+	if($_GET("Ncompeti")==282) var url="/es/primera-iberdrola/calendario-y-resultados/?portada=1&j=" + Tjornada + "&y=" + Nano;
+	if($_GET("Ncompeti")==283) var url="/es/primera-nacional/calendario-y-resultados/?portada=1&j=" + Tjornada + "&y=" + Nano;
+	if($_GET("Ncompeti")==2148) var url="/es/reto-iberdrola/calendario-y-resultados/?portada=1&j=" + Tjornada + "&y=" + Nano;
+	if($_GET("Ncompeti")==1866) var url="/es/copa-sm-la-reina/calendario-y-resultados/?portada=1&j=" + Tjornada + "&y=" + Nano;
+	if($_GET("Ncompeti")==2207) var url="/es/supercopa-de-espana/calendario-y-resultados/?portada=1&j=" + Tjornada + "&y=" + Nano;
+	$(".well-jornadas-home" ).load( url, function() {
+  	   $('#botones_jornada_portada a').click(function(e) 
+   		{ 
+   			cargarJornadaActual($(this).attr("data-Tjornada"),$(this).attr("data-Nano"));
+    		return false;
+   		});
+	});
+}
+
+$(function(){
+	window.addEventListener("orientationchange",function(){window.location.reload()});
+  new LazyLoad({
+		elements_selector: `.lazy`,
+    use_native: true 
+  });
+  
+  
+  
+            
+  $( ".enlace_popup" ).click(function() {
+  	var team=$(this).attr("data-team");
+  	var _round=$(this).attr("data-round");
+  	
+  	$.get( "/clasificacion/partido_popup.php?Ncompeti=" + $(this).attr("data-Ncompeti") + "&Nano="+ $(this).attr("data-Nano") + "&team=" + $(this).attr("data-team") + "&round=" + _round + "&Ngrupo=" + $(this).attr("data-Ngrupo"), function( data ) {
+  		
+  		$("#enlace_popup_" + team + "_" + _round).attr("data-content",data);
+  		$("#enlace_popup_" + team + "_" + _round).popover("show");
+		});
+	});
+	
+	
+	 $( "#y" ).change(function() {
+	 	var url=document.location.href;
+	 	var base = url.substr(0, url.indexOf('?'));
+  	document.location.href=base + "?y=" +$(this).val() ;
+	});
+	
+	var param_seccion = $_GET("param_seccion");
+
+	if(param_seccion=="detalle_partido"){
+		if($_GET("s")==1){
+			setInterval(actualizarDatosPartido, 60000,$_GET("p"));
+
+		} 
+	}
+	
+	if(param_seccion!="home"){
+		var altura=0;
+		var body = $("html, body");
+		var mq = window.matchMedia("(max-width: 768px)");
+		if (mq.matches) {
+    	// window width is at less than 768px
+    	altura=185;
+		}
+		else {
+			var mq = window.matchMedia("(max-width: 885px)");
+			if(mq.matches){
+				// window width is greater less 885px
+				altura=220;
+			}
+			else{
+				var mq = window.matchMedia("(max-width: 992px)");
+				if(mq.matches){
+					// window width is greater less 992px
+					altura=255;	
+				}
+				else{
+					// window width is greater more 992px
+					altura=255;	
+				}
+				
+			}
+			
+		}
+		
+		body.stop().animate({scrollTop:altura},500 ,function(){
+			$("#header").removeClass("headroom--top");
+			$("#header").removeClass("headroom--unpinned");
+			//$("#header").addClass("headroom");
+			//$("#header").addClass("headroom--not--bottom");
+			$("#header").addClass("headroom--not--top");
+			$("#header").addClass("headroom--pinned");
+		});
+		
+		
+		
+	}
+	
+	
+	
+	$('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+		$("html, body").animate({ scrollTop: $('#myTabContent').offset().top - 150 }, 1000);
+	  })
+      
+    
+	if(param_seccion=="home" || param_seccion=="calendario-y-resultados") cargarJornadaActual();
+	
+            
+});
+
+  document.addEventListener("DOMContentLoaded", function (event) {
+
+            var scroll = document.getElementsByClassName("dragscroll");
+            for (x = 0; x < scroll - length; x++) scroll[x].addEventListener("scroll", function (event) {});
+
+            function readCookie() {
+
+                var valCookies = [];
+
+                var ca = document.cookie.split(';');
+		
+                for (var i = 0; i < ca.length; i++) {
+
+                    var c = ca[i];
+
+                    while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+
+                    var nombreCookie = c.split('=');
+
+                    if (nombreCookie[0].indexOf("drag") !== -1) {
+                        
+                        var objCookie = {};
+                        objCookie.nombre = nombreCookie[0].replace('drag','');
+                        objCookie.nombre = objCookie.nombre.replace(' ','');
+                        objCookie.valor = decodeURIComponent(nombreCookie[1]);
+                        valCookies.push(objCookie);
+                    }
+
+                }
+
+                return valCookies;
+
+			}
+			
+			function readFlag() {
+                //var valCookies = [];
+
+                var ca = document.cookie.split(';');
+
+                for (var i = 0; i < ca.length; i++) {
+
+                    var c = ca[i];
+
+                    while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+
+					var banderaCookie = c.split('=');
+					
+
+                    if(banderaCookie[0]==="bandera"){
+
+						//console.log("cookie bandera: " + banderaCookie[0] + " - valor bandera: " + banderaCookie[1]);
+
+                        return decodeURIComponent(banderaCookie[1]);
+                    }
+
+
+
+                }
+
+
+			}
+			
+			var flag = readFlag();
+
+			//console.log("flag: " + flag);
+
+			document.cookie = "bandera=false" + ";path=/";
+
+            var myCookie = readCookie();
+
+
+			if(flag==="true") {
+
+				//console.log(myCookie);
+
+				if (myCookie.length > 0) {
+					for (var x = 0; x < myCookie.length; x++) {
+
+						//console.log("nombre cookie: " + myCookie[x].nombre + " - valor: " + myCookie[x].valor);
+
+						var selector = "[data-cookie=" + myCookie[x].nombre + "]";
+						var el = document.querySelector(selector);
+
+						if(el != null) {
+						el.scrollLeft = myCookie[x].valor;
+
+					}
+
+						
+					}
+				}
+			
+		}
+
+            const buttons = document.querySelectorAll(".dragscroll li a");
+            for (const button of buttons) {
+                button.addEventListener('click', function (event) {
+					event.preventDefault();
+		
+
+                    var capaScroll = event.currentTarget.closest('.dragscroll');
+
+                    var cuqui = capaScroll.dataset.cookie;
+
+					document.cookie = "drag" + cuqui + "=" + capaScroll.scrollLeft +";path=/";
+
+					document.cookie = "bandera=true" + ";path=/";
+
+                    window.location.href = event.currentTarget.href;
+
+                })
+            }
+		});
+		
+		$(function(){
+			$('.ver-mas').on('click', function(e){
+				e.preventDefault();
+				var elemento = '#' + $(this).data('id');
+				if( $(this).data('abierto') == false) {
+					$(this).data('abierto',true);
+					var altura = $(elemento).height() + 'px';
+					$(elemento).parent().css('height',altura);
+					$(this).text('Ver menos');
+				}
+				else {
+					$(this).data('abierto',false);
+					$(elemento).parent().css('height','405px');
+					$(this).text('Ver más');
+				}
+			})
+		});
